@@ -1,0 +1,7 @@
+2026-10-05 17:51:33,352 [MainThread] listening on localhost:5000 (log: chat_server.log)
+2026-10-05 17:51:57,767 [client-46834] handshake done with ('127.0.0.1', 46834), key fingerprint 473622ca2f9afc43
+2026-10-05 17:52:04,686 [client-46834] Caleb joined from ('127.0.0.1', 46834)
+2026-10-05 17:52:17,709 [client-46834] MSG Caleb: Hello my channel
+2026-10-05 17:53:12,162 [client-33346] handshake done with ('127.0.0.1', 33346), key fingerprint 74ab071d9b33e18f
+2026-10-05 17:53:16,794 [client-33346] Caleb2 joined from ('127.0.0.1', 33346)
+2026-10-05 17:53:26,287 [client-33346] MSG Caleb2: Hello my channel 2!

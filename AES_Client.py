@@ -1,23 +1,57 @@
-import socket   
-from Crypto.Cipher import AES
-import base64
+"""Encrypted chat client: ECDH handshake, then encrypted send/receive."""
+import socket
+import threading
+
+from Crypto.PublicKey import ECC
+
+from chat_common import (CURVE, decrypt_message, encrypt_message, fingerprint,
+                         handshake, recv_frame, send_frame)
+
+HOST, PORT = "localhost", 5000
 
 
-KEY = b'12345678901234567890123456789012' # 32 bytes for AES -256
-IV = b'1234567890123456'                  # 16 bits for IV
+def receive_loop(sock, key, stop):
+    try:
+        while not stop.is_set():
+            print("\r" + decrypt_message(key, recv_frame(sock)))
+    except (OSError, ValueError):
+        pass
+    finally:
+        if not stop.is_set():
+            print("\n[disconnected - press Enter to exit]")
+        stop.set()
 
 
-def encrypt_message(msg):   
-    cipher = AES.new(KEY,AES.MODE_CBC , IV)
-    encrypted = cipher.encrypt(msg.encode('utf-8'))
-    return base64.b64encode(encrypted).decode('utf-8')  
+def main():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((HOST, PORT))
+
+    key = handshake(sock, ECC.generate(curve=CURVE))
+    print(f"Secure channel established. Key fingerprint: {fingerprint(key)}")
+
+    name = input("Your name: ").strip()
+    send_frame(sock, encrypt_message(key, name))
+
+    stop = threading.Event()
+    threading.Thread(target=receive_loop, args=(sock, key, stop),
+                     daemon=True).start()
+
+    try:
+        while not stop.is_set():
+            text = input()
+            if stop.is_set():
+                break
+            if not text:
+                continue
+            send_frame(sock, encrypt_message(key, text))
+            if text == "/quit":
+                break
+    except (EOFError, KeyboardInterrupt, OSError):
+        pass
+    finally:
+        stop.set()
+        sock.close()
 
 
-#Create TCP socket
-client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-client_socket.connect(('localhost',5000))
-message = input('Enter 16 bit message: ')
-encrypted_msg = encrypt_message(message)
-print(f"Encrypted message sent by client is : {encrypted_msg}")
-client_socket.sendall(encrypted_msg.encode())
-client_socket.close()
+if __name__ == "__main__":
+    main()
